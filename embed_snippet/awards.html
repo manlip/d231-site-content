@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="District 231 awards and recognition">
+    <title>District 231 Awards</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap">
+    <link rel="stylesheet" href="../css/awards.css">
+</head>
+<body>
+    <main class="awards-page">
+        <header class="awards-hero">
+            <p class="hero-label">Toastmasters District 231</p>
+            <h1>Awards &amp; Recognition</h1>
+            <p>Celebrating the achievements of our clubs and members.</p>
+        </header>
+        <p id="awards-notice" class="awards-notice" role="status" hidden>
+            Could not refresh the awards. Showing saved data, which may be outdated.
+        </p>
+        <div id="awards-loading" class="awards-status" role="status">Loading awards...</div>
+        <div id="awards-container"></div>
+        <section id="awards-empty" class="awards-empty" hidden>
+            <h2>No awards found</h2>
+            <p>There are no awards to show yet.</p>
+        </section>
+        <div id="award-modal" class="award-modal" role="dialog" aria-modal="true" aria-labelledby="award-modal-title" hidden>
+            <article class="award-dialog">
+                <button class="modal-close" type="button" data-action="close" aria-label="Close award details">&times;</button>
+                <div id="award-modal-content"></div>
+            </article>
+        </div>
+    </main>
+    <script src="../js/utils.js"></script>
+    <script src="../js/awards-loader.js"></script>
+</body>
+</html>

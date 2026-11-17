@@ -10,32 +10,90 @@ function initTeamPage() {
     const notice = document.getElementById("team-notice");
     if (!root) return;
 
-    root.style.setProperty("--cards-per-row", TEAM_CONFIG.cardsPerRow);
+    document.documentElement.style.setProperty(
+        "--team-grid-max-width",
+        `calc(${TEAM_CONFIG.cardsPerRow * 147}px + ${TEAM_CONFIG.cardsPerRow - 1}rem)`
+    );
 
     const load = () => {
-        notice.hidden = true;
+        if (notice) notice.hidden = true;
         SiteUtils.loadJsonWithSWR(TEAM_CONFIG.dataPath, TEAM_CONFIG.cachePrefix, {
-            onRender: (data) => renderTeamTree(data, root),
+            validate: validateTeamData,
+            onRender: (data) => {
+                renderTeamTree(data, root);
+                requestEmbedResize();
+            },
             onStaleError: () => {
+                if (!notice) return;
                 notice.textContent = "Could not refresh the team. Showing saved data, which may be outdated.";
                 notice.hidden = false;
             },
-            onFatalError: () => {
+            onFatalError: (error) => {
                 root.innerHTML = `
-          <div class="team-error">
-            <p>Unable to load the District Team right now.</p>
+          <div class="status error" role="status">
+            <p>Could not load the team: ${escapeHtml(error.message)}</p>
             <button type="button" id="team-retry-btn">Retry</button>
           </div>
         `;
                 document.getElementById("team-retry-btn")?.addEventListener("click", () => {
-                    root.innerHTML = `<p class="team-loading">Loading team...</p>`;
+                    root.innerHTML = `<p class="status" role="status">Loading team...</p>`;
                     load();
                 });
+                requestEmbedResize();
             }
         });
     };
 
     load();
+    window.addEventListener("load", requestEmbedResize);
+    window.addEventListener("resize", requestEmbedResize);
+    if (window.ResizeObserver) {
+        new ResizeObserver(requestEmbedResize).observe(document.querySelector(".page"));
+    }
+}
+
+function validateTeamData(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Expected an object containing team members.");
+    }
+
+    if (Object.prototype.hasOwnProperty.call(data, "members")) {
+        if (!Array.isArray(data.members) || data.members.some(
+            (member) => !member || typeof member !== "object" || Array.isArray(member)
+        )) {
+            throw new Error("Expected the members field to contain a list of member objects.");
+        }
+        return data;
+    }
+
+    Object.entries(data).forEach(([category, groups]) => {
+        if (!groups || typeof groups !== "object" || Array.isArray(groups)) {
+            throw new Error(`Expected subcategories for ${category}.`);
+        }
+        Object.entries(groups).forEach(([subcategory, members]) => {
+            if (!Array.isArray(members) || members.some(
+                (member) => !member || typeof member !== "object" || Array.isArray(member)
+            )) {
+                throw new Error(`Expected a list of members in ${category}/${subcategory}.`);
+            }
+        });
+    });
+
+    return data;
+}
+
+function requestEmbedResize() {
+    if (window.parent === window) return;
+
+    const height = Math.ceil(Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight
+    ));
+
+    if (window.super && typeof window.super.resize === "function") {
+        window.super.resize();
+    }
+    window.parent.postMessage({ sentinel: "amp", type: "embed-size", height }, "*");
 }
 
 function normalizeTeamGroups(rawData) {
@@ -50,6 +108,7 @@ function normalizeTeamGroups(rawData) {
 
     if (rows) {
         rows.forEach((item) => {
+            if (item.visibility === "hidden") return;
             const cat = (item.category || "Other").trim();
             const sub = (item.subcategory || "Default").trim();
             if (!grouped.has(cat)) grouped.set(cat, new Map());
@@ -93,13 +152,15 @@ function renderTeamTree(rawData, root) {
     }
 
     root.innerHTML = sections.map(({ category, subcategories }) => `
-    <section class="team-category" aria-label="${escapeHtml(category)}">
-      <h2 class="team-category-title">${escapeHtml(category)}</h2>
-      ${subcategories.map((members) => `
-        <div class="team-grid">
-          ${members.map(renderMemberCard).join("")}
-        </div>
-      `).join("")}
+    <section class="section" aria-label="${escapeHtml(category)}">
+      <div class="heading"><h2>${escapeHtml(category)}</h2></div>
+      <div class="subcategory-rows">
+        ${subcategories.map((members) => `
+          <div class="grid">
+            ${members.map(renderMemberCard).join("")}
+          </div>
+        `).join("")}
+      </div>
     </section>
   `).join("");
 
@@ -112,48 +173,63 @@ function renderMemberCard(member) {
     const resp = member.responsability || member.responsibility || member.description2 || "Details coming soon.";
     const imgUrl = SiteUtils.getAssetUrl(member.imageLink || member.image);
 
+    const placeholder = `
+      <div class="portrait" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"></path>
+        </svg>
+      </div>
+      <h3>${escapeHtml(name)}</h3>
+      <p class="role">${escapeHtml(role || "Role not provided")}</p>`;
     const frontContent = imgUrl
-        ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(name)} - ${escapeHtml(role)}" class="team-card-img" loading="lazy">`
-        : `<div class="team-card-placeholder">
-         <span class="team-initials">${escapeHtml(getInitials(name))}</span>
-         <strong class="team-placeholder-name">${escapeHtml(name)}</strong>
-         <span class="team-placeholder-role">${escapeHtml(role)}</span>
-       </div>`;
+        ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(name)}${role ? ` - ${escapeHtml(role)}` : ""}" loading="lazy"><div class="image-fallback" hidden>${placeholder}</div>`
+        : placeholder;
+    const responsibility = resp && String(resp).trim()
+        ? `<p>${escapeHtml(String(resp).trim())}</p>`
+        : "<p>No additional details provided.</p>";
 
     return `
-    <div class="team-card" role="button" tabindex="0" aria-pressed="false" aria-label="${escapeHtml(name)}, ${escapeHtml(role)}. Activate to view responsibilities.">
-      <div class="team-card-inner">
-        <div class="team-card-front">${frontContent}</div>
-        <div class="team-card-back">
-          <div class="team-back-header">
-            <strong>${escapeHtml(name)}</strong>
-            <span>${escapeHtml(role)}</span>
-          </div>
-          <div class="team-back-body">${escapeHtml(resp)}</div>
+    <article class="card" role="button" tabindex="0" aria-pressed="false" aria-label="Show responsibilities for ${escapeHtml(name)}" data-member-name="${escapeHtml(name)}">
+      <div class="card-inner">
+        <div class="face front${imgUrl ? " image-card" : ""}">${frontContent}</div>
+        <div class="face back" inert aria-hidden="true">
+          <h3>${escapeHtml(role || "Role not provided")}</h3>
+          <div class="details" tabindex="0" aria-label="Details for ${escapeHtml(name)}">${responsibility}</div>
         </div>
       </div>
-    </div>
+    </article>
   `;
 }
 
 function bindFlipInteractions(root) {
-    root.querySelectorAll(".team-card").forEach((card) => {
+    root.querySelectorAll(".card").forEach((card) => {
         const toggle = () => {
             const flipped = card.classList.toggle("is-flipped");
             card.setAttribute("aria-pressed", String(flipped));
+            const front = card.querySelector(".front");
+            const back = card.querySelector(".back");
+            front.inert = flipped;
+            back.inert = !flipped;
+            front.setAttribute("aria-hidden", String(flipped));
+            back.setAttribute("aria-hidden", String(!flipped));
+            card.setAttribute("aria-label", `${flipped ? "Show front for" : "Show responsibilities for"} ${card.dataset.memberName}`);
         };
         card.addEventListener("click", toggle);
         card.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
+            if (e.target === card && (e.key === "Enter" || e.key === " ")) {
                 e.preventDefault();
                 toggle();
             }
         });
     });
-}
 
-function getInitials(name) {
-    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || "D231";
+    root.querySelectorAll(".front img").forEach((image) => {
+        image.addEventListener("error", () => {
+            image.hidden = true;
+            image.parentElement.classList.remove("image-card");
+            image.nextElementSibling.hidden = false;
+        }, { once: true });
+    });
 }
 
 function escapeHtml(str) {

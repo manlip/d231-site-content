@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Preview District 231 pages as they will appear embedded in Google Sites.">
+    <title>District 231 Website Preview</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; color: #1e293b; font-family: Arial, sans-serif; }
+        .site-header { padding: 1rem clamp(1rem, 4vw, 3rem) 0; background: #772432; color: #fff; }
+        .site-title { margin: 0 0 1rem; font-size: 1.15rem; }
+        .page-nav { display: flex; gap: .25rem; overflow-x: auto; }
+        .page-tab {
+            flex: 0 0 auto;
+            padding: .75rem 1rem;
+            border: 0;
+            border-radius: .5rem .5rem 0 0;
+            background: transparent;
+            color: #fff;
+            font: inherit;
+            cursor: pointer;
+        }
+        .page-tab[aria-selected="true"] { background: #fff; color: #772432; }
+        .page-tab:focus-visible { outline: 3px solid #f0c9d0; outline-offset: -3px; }
+        .preview { min-height: calc(100vh - 7rem); padding: 1rem; background: #f4f6f8; }
+        .page-frame { display: block; width: 100%; min-height: calc(100vh - 9rem); border: 0; background: #fff; }
+        .coming-soon { max-width: 48rem; margin: 3rem auto; padding: 2rem; border-radius: .75rem; background: #fff; text-align: center; }
+        .coming-soon h2 { color: #772432; }
+        @media (max-width: 600px) {
+            .preview { padding: .5rem; }
+            .page-frame { min-height: calc(100vh - 8rem); }
+            .page-tab { padding: .7rem .8rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <h1 class="site-title">District 231</h1>
+        <nav class="page-nav" role="tablist" aria-label="Website pages">
+            <button class="page-tab" id="tab-team" type="button" role="tab" aria-selected="true" aria-controls="page-panel" tabindex="0" data-page="team">Team</button>
+            <button class="page-tab" id="tab-events" type="button" role="tab" aria-selected="false" aria-controls="page-panel" tabindex="-1" data-page="events">Events</button>
+            <button class="page-tab" id="tab-map" type="button" role="tab" aria-selected="false" aria-controls="page-panel" tabindex="-1" data-page="map">Map</button>
+            <button class="page-tab" id="tab-resources" type="button" role="tab" aria-selected="false" aria-controls="page-panel" tabindex="-1" data-page="resources">Resources</button>
+            <button class="page-tab" id="tab-awards" type="button" role="tab" aria-selected="false" aria-controls="page-panel" tabindex="-1" data-page="awards">Awards</button>
+        </nav>
+    </header>
+    <main class="preview" id="page-panel" role="tabpanel" aria-labelledby="tab-team">
+        <iframe class="page-frame" title="Team page preview" src="./embed_snippet/team.html"></iframe>
+    </main>
+    <script>
+        const pages = {
+            team: { title: "Team page preview", src: "./embed_snippet/team.html" },
+            events: { label: "Events" },
+            map: { label: "Map" },
+            resources: { label: "Resources" },
+            awards: { title: "Awards page preview", src: "./embed_snippet/awards.html" }
+        };
+        const panel = document.getElementById("page-panel");
+        let activeFrame = panel.querySelector(".page-frame");
+        if (activeFrame) activeFrame.addEventListener("load", requestParentResize);
+
+        function selectPage(tab) {
+            document.querySelectorAll('[role="tab"]').forEach((item) => {
+                const selected = item === tab;
+                item.setAttribute("aria-selected", String(selected));
+                item.tabIndex = selected ? 0 : -1;
+            });
+            panel.setAttribute("aria-labelledby", tab.id);
+            panel.replaceChildren();
+            activeFrame = null;
+
+            const page = pages[tab.dataset.page];
+            if (page.src) {
+                const frame = document.createElement("iframe");
+                frame.className = "page-frame";
+                frame.title = page.title;
+                frame.src = page.src;
+                activeFrame = frame;
+                frame.addEventListener("load", requestParentResize);
+                panel.append(frame);
+            } else {
+                const message = document.createElement("section");
+                message.className = "coming-soon";
+                const heading = document.createElement("h2");
+                heading.textContent = `${page.label} page`;
+                const description = document.createElement("p");
+                description.textContent = "This page will appear here when its GitHub Pages version is ready.";
+                message.append(heading, description);
+                panel.append(message);
+            }
+            requestParentResize();
+        }
+
+        function requestParentResize() {
+            if (window.parent === window) return;
+            const height = Math.ceil(Math.max(
+                document.documentElement.scrollHeight,
+                document.body.scrollHeight
+            ));
+            if (window.super && typeof window.super.resize === "function") {
+                window.super.resize();
+            }
+            window.parent.postMessage({ sentinel: "amp", type: "embed-size", height }, "*");
+        }
+
+        window.addEventListener("message", (event) => {
+            if (event.source !== activeFrame?.contentWindow ||
+                event.data?.sentinel !== "amp" ||
+                event.data?.type !== "embed-size") return;
+
+            const height = Number(event.data.height);
+            if (!Number.isFinite(height) || height < 1) return;
+            activeFrame.style.height = `${Math.ceil(height)}px`;
+            requestParentResize();
+        });
+
+        window.addEventListener("resize", requestParentResize);
+
+        document.querySelectorAll('[role="tab"]').forEach((tab) => {
+            tab.addEventListener("click", () => selectPage(tab));
+            tab.addEventListener("keydown", (event) => {
+                if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                event.preventDefault();
+                const tabs = [...document.querySelectorAll('[role="tab"]')];
+                const offset = event.key === "ArrowRight" ? 1 : -1;
+                const next = tabs[(tabs.indexOf(tab) + offset + tabs.length) % tabs.length];
+                selectPage(next);
+                next.focus();
+            });
+        });
+    </script>
+</body>
+</html>

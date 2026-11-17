@@ -1,223 +1,134 @@
-const TEAM_CONFIG = {
-    cardsPerRow: 6,
-    dataPath: "data/team.json",
-    cachePrefix: "google_sheet_team",
-    categoryOrder: ["Trio", "Core Team", "Divisions"] // "Committees" always forced last
-};
+const SITE_ROOT_URL = (() => {
+    const scriptUrl = document.currentScript?.src;
+    return scriptUrl ? new URL("../", scriptUrl) : new URL("./", document.baseURI);
+})();
 
-function initTeamPage() {
-    const root = document.getElementById("team-root");
-    const notice = document.getElementById("team-notice");
-    if (!root) return;
-
-    root.style.setProperty("--cards-per-row", TEAM_CONFIG.cardsPerRow);
-
-    const load = () => {
-        notice.hidden = true;
-        SiteUtils.loadJsonWithSWR(TEAM_CONFIG.dataPath, TEAM_CONFIG.cachePrefix, {
-            onRender: (data) => renderTeamTree(data, root),
-            onStaleError: () => {
-                notice.textContent = "Could not refresh the team. Showing saved data, which may be outdated.";
-                notice.hidden = false;
-            },
-            onFatalError: () => {
-                root.innerHTML = `
-          <div class="team-error">
-            <p>Unable to load the District Team right now.</p>
-            <button type="button" id="team-retry-btn">Retry</button>
-          </div>
-        `;
-                document.getElementById("team-retry-btn")?.addEventListener("click", () => {
-                    root.innerHTML = `<p class="team-loading">Loading team...</p>`;
-                    load();
-                });
-            }
-        });
-    };
-
-    load();
-}
-
-function normalizeTeamGroups(rawData) {
-    // Supports both flat { members: [...] } and legacy nested { Trio: { "District Trio": [...] } }
-    const rows = Array.isArray(rawData)
-        ? rawData
-        : Array.isArray(rawData?.members)
-            ? rawData.members
-            : null;
-
-    const grouped = new Map();
-
-    if (rows) {
-        rows.forEach((item) => {
-            const cat = (item.category || "Other").trim();
-            const sub = (item.subcategory || "Default").trim();
-            if (!grouped.has(cat)) grouped.set(cat, new Map());
-            if (!grouped.get(cat).has(sub)) grouped.get(cat).set(sub, []);
-            grouped.get(cat).get(sub).push(item);
-        });
-    } else if (rawData && typeof rawData === "object") {
-        Object.entries(rawData).forEach(([cat, subs]) => {
-            if (!subs || typeof subs !== "object") return;
-            const subMap = new Map();
-            Object.entries(subs).forEach(([sub, list]) => {
-                if (Array.isArray(list)) subMap.set(sub, list);
-            });
-            grouped.set(cat, subMap);
-        });
-    }
-
-    // Sort categories: Trio -> Core Team -> Divisions -> [Other] -> Committees
-    const sortedCategories = [...grouped.keys()].sort((a, b) => {
-        if (a === "Committees") return 1;
-        if (b === "Committees") return -1;
-        const idxA = TEAM_CONFIG.categoryOrder.indexOf(a);
-        const idxB = TEAM_CONFIG.categoryOrder.indexOf(b);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1;
-        if (idxB !== -1) return 1;
-        return 0;
-    });
-
-    return sortedCategories.map((cat) => ({
-        category: cat,
-        subcategories: [...grouped.get(cat).values()]
-    }));
-}
-
-function renderTeamTree(rawData, root) {
-    const sections = normalizeTeamGroups(rawData);
-    if (!sections.length) {
-        root.innerHTML = `<p class="team-empty">No team members published yet.</p>`;
-        return;
-    }
-
-    root.innerHTML = sections.map(({ category, subcategories }) => `
-    <section class="team-category" aria-label="${escapeHtml(category)}">
-      <h2 class="team-category-title">${escapeHtml(category)}</h2>
-      ${subcategories.map((members) => `
-        <div class="team-grid">
-          ${members.map(renderMemberCard).join("")}
-        </div>
-      `).join("")}
-    </section>
-  `).join("");
-
-    bindFlipInteractions(root);
-}
-
-function renderMemberCard(member) {
-    const name = member.name || member.title || "Team Member";
-    const role = member.role || "";
-    const resp = member.responsability || member.responsibility || member.description2 || "Details coming soon.";
-    const imgUrl = SiteUtils.getAssetUrl(member.imageLink || member.image);
-
-    const frontContent = imgUrl
-        ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(name)} - ${escapeHtml(role)}" class="team-card-img" loading="lazy">`
-        : `<div class="team-card-placeholder">
-         <span class="team-initials">${escapeHtml(getInitials(name))}</span>
-         <strong class="team-placeholder-name">${escapeHtml(name)}</strong>
-         <span class="team-placeholder-role">${escapeHtml(role)}</span>
-       </div>`;
-
-    return `
-    <div class="team-card" role="button" tabindex="0" aria-pressed="false" aria-label="${escapeHtml(name)}, ${escapeHtml(role)}. Activate to view responsibilities.">
-      <div class="team-card-inner">
-        <div class="team-card-front">${frontContent}</div>
-        <div class="team-card-back">
-          <div class="team-back-header">
-            <strong>${escapeHtml(name)}</strong>
-            <span>${escapeHtml(role)}</span>
-          </div>
-          <div class="team-back-body">${escapeHtml(resp)}</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function bindFlipInteractions(root) {
-    root.querySelectorAll(".team-card").forEach((card) => {
-        const toggle = () => {
-            const flipped = card.classList.toggle("is-flipped");
-            card.setAttribute("aria-pressed", String(flipped));
-        };
-        card.addEventListener("click", toggle);
-        card.addEventListener("keydown", (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                toggle();
-            }
-        });
-    });
-}
-
-function getInitials(name) {
-    return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("") || "D231";
-}
-
-function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-}
-
-initTeamPage();
-
+const FETCH_TIMEOUT_MS = 20000;
+const FETCH_RETRY_DELAYS_MS = [1000, 3000];
 
 const SiteUtils = {
-    // Returns the fast-updating raw GitHub URL for JSON files
     getDataUrl(filePath) {
-        const cleanPath = filePath.replace(/^\/+/, "");
-        return `https://githubusercontent.com{SITE_CONFIG.user}/${SITE_CONFIG.repo}/${SITE_CONFIG.branch}/${cleanPath}`;
+        return new URL(String(filePath).replace(/^\/+/, ""), SITE_ROOT_URL).href;
     },
 
-    // Returns the global jsDelivr CDN URL for images, PDFs, and assets
     getAssetUrl(assetPath) {
         if (!assetPath) return "";
-        if (assetPath.startsWith("http")) return assetPath;
-        const cleanPath = assetPath.replace(/^\/+/, "");
-        return `https://jsdelivr.net{SITE_CONFIG.user}/${SITE_CONFIG.repo}@${SITE_CONFIG.branch}/${cleanPath}`;
+        if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(assetPath)) return assetPath;
+        return new URL(String(assetPath).replace(/^\/+/, ""), SITE_ROOT_URL).href;
     },
 
-    // Fetches JSON with automatic localStorage caching to eliminate lag
-    async fetchCachedJson(filePath) {
+    readCache(key) {
+        for (const storageName of ["localStorage", "sessionStorage"]) {
+            try {
+                const value = window[storageName].getItem(key);
+                if (value !== null) return JSON.parse(value);
+            } catch (error) {
+                console.warn(`SiteUtils could not read ${storageName} cache:`, error);
+            }
+        }
+        return null;
+    },
+
+    writeCache(key, data) {
+        const value = JSON.stringify(data);
+        for (const storageName of ["localStorage", "sessionStorage"]) {
+            try {
+                window[storageName].setItem(key, value);
+            } catch (error) {
+                console.warn(`SiteUtils could not write ${storageName} cache:`, error);
+            }
+        }
+    },
+
+    async fetchJson(filePath, { validate = (data) => data } = {}) {
         const url = this.getDataUrl(filePath);
+        let lastError;
+
+        for (let attempt = 0; attempt <= FETCH_RETRY_DELAYS_MS.length; attempt++) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+            try {
+                const response = await fetch(url, { signal: controller.signal });
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status} loading ${filePath}`);
+                }
+
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch {
+                    const error = new Error(`Invalid JSON returned while loading ${filePath}.`);
+                    error.permanent = true;
+                    throw error;
+                }
+
+                try {
+                    return validate(data);
+                } catch (cause) {
+                    const error = new Error(`Invalid data in ${filePath}: ${cause.message}`);
+                    error.permanent = true;
+                    throw error;
+                }
+            } catch (error) {
+                lastError = error.name === "AbortError"
+                    ? new Error(`Request timed out loading ${filePath}.`)
+                    : error;
+                if (error.permanent) break;
+            } finally {
+                clearTimeout(timeout);
+            }
+
+            if (attempt < FETCH_RETRY_DELAYS_MS.length) {
+                await new Promise((resolve) => setTimeout(resolve, FETCH_RETRY_DELAYS_MS[attempt]));
+            }
+        }
+
+        throw lastError;
+    },
+
+    async fetchCachedJson(filePath, options) {
         const cacheKey = `gh_cache_${filePath}`;
-        const timeKey = `gh_time_${filePath}`;
-        const maxAge = SITE_CONFIG.cacheMinutes * 60 * 1000;
+        const cached = this.readCache(cacheKey);
 
         try {
-            const cachedData = localStorage.getItem(cacheKey);
-            const cachedTime = localStorage.getItem(timeKey);
-
-            // Return cached data if it is still fresh
-            if (cachedData && cachedTime && (Date.now() - Number(cachedTime) < maxAge)) {
-                return JSON.parse(cachedData);
-            }
-
-            // Otherwise fetch fresh JSON from GitHub
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP error ${response.status} loading ${filePath}`);
-            }
-
-            const data = await response.json();
-            localStorage.setItem(cacheKey, JSON.stringify(data));
-            localStorage.setItem(timeKey, Date.now().toString());
+            const data = await this.fetchJson(filePath, options);
+            this.writeCache(cacheKey, data);
             return data;
         } catch (error) {
             console.error("SiteUtils fetch error:", error);
-            // Fallback to expired cache if offline or rate-limited
-            const fallback = localStorage.getItem(cacheKey);
-            if (fallback) return JSON.parse(fallback);
+            if (cached !== null) return cached;
             throw error;
         }
     },
 
-    // Safely parses Markdown text using marked.js (if loaded)
+    async loadJsonWithSWR(filePath, cachePrefix, { onRender, onStaleError, onFatalError, validate }) {
+        const cacheKey = `${cachePrefix}_${filePath}`;
+        let cached = this.readCache(cacheKey);
+
+        if (cached !== null && validate) {
+            try {
+                cached = validate(cached);
+            } catch (error) {
+                console.warn("SiteUtils ignoring invalid cached data:", error);
+                cached = null;
+            }
+        }
+
+        if (cached !== null) onRender(cached);
+
+        try {
+            const data = await this.fetchJson(filePath, { validate });
+            this.writeCache(cacheKey, data);
+            onRender(data);
+        } catch (error) {
+            console.error("SiteUtils refresh error:", error);
+            if (cached !== null) onStaleError(error);
+            else onFatalError(error);
+        }
+    },
+
     parseMarkdown(text) {
         if (!text) return "";
         return typeof marked !== "undefined" ? marked.parse(text) : text;
