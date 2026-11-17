@@ -1,0 +1,38 @@
+- name: team_page
+  label: District Team
+  type: file
+  path: data/team.json
+  format: json
+  fields:
+    - name: members
+      label: Team Members
+      type: object
+      list: true
+      fields:
+        - name: category
+          label: Category
+          type: select
+          options:
+            values:
+              - Trio
+              - Core Team
+              - Divisions
+              - Committees
+        - name: subcategory
+          label: Subcategory (e.g., District Trio, Division A)
+          type: string
+        - name: name
+          label: Full Name
+          type: string
+        - name: role
+          label: Role / Title
+          type: string
+        - name: image
+          label: Card Image (3:4 Transparent PNG)
+          type: image
+          options:
+            media: images
+            path: assets/images/team
+        - name: responsability
+          label: Responsibilities
+          type: text
