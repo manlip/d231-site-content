@@ -1,38 +1,191 @@
-- name: team_page
-  label: District Team
-  type: file
-  path: data/team.json
-  format: json
-  fields:
-    - name: members
-      label: Team Members
-      type: object
-      list: true
-      fields:
-        - name: category
-          label: Category
-          type: select
-          options:
-            values:
-              - Trio
-              - Core Team
-              - Divisions
-              - Committees
-        - name: subcategory
-          label: Subcategory (e.g., District Trio, Division A)
-          type: string
-        - name: name
-          label: Full Name
-          type: string
-        - name: role
-          label: Role / Title
-          type: string
-        - name: image
-          label: Card Image (3:4 Transparent PNG)
-          type: image
-          options:
-            media: images
-            path: assets/images/team
-        - name: responsability
-          label: Responsibilities
-          type: text
+media:
+  - name: images
+    label: General Images
+    input: assets/images
+    output: /assets/images
+  - name: files
+    label: PDFs & Documents
+    input: assets/files
+    output: /assets/files
+
+content:
+  - name: district_team
+    label: District Team
+    type: file
+    path: data/team.json
+    format: json
+    fields:
+      - name: members
+        label: Team Members
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.name} — {fields.role} ({fields.category})"
+        fields:
+          - name: visibility
+            label: Visibility
+            type: select
+            default: public
+            options:
+              values:
+                - public
+                - hidden
+          - name: category
+            label: Category
+            type: select
+            options:
+              values:
+                - Core Team
+                - Division A
+                - Division B
+                - Division C
+                - Division D
+                - Division E
+                - Division F
+                - Committees
+          - name: subcategory
+            label: Subcategory
+            type: select
+            options:
+              values:
+                - Trio
+                - Core Officers
+                - Division Director
+                - Area Director
+                - Committee Chair
+                - Committee Member
+          - name: name
+            label: Full Name
+            type: string
+            required: true
+          - name: role
+            label: Role / Title
+            type: string
+            required: true
+          - name: abriviation
+            label: Role Abbreviation (e.g., DD, PQD, AD-A1)
+            type: string
+          - name: country
+            label: Country
+            type: string
+          - name: image
+            label: Card Image (3:4 Transparent PNG)
+            type: image
+            options:
+              media: images
+              path: assets/images/team
+          - name: description
+            label: Short Note (Optional)
+            type: string
+          - name: responsability
+            label: Responsibilities (Markdown)
+            type: rich-text
+
+  - name: general_content
+    label: Awards & General Content
+    type: file
+    path: data/content.json
+    format: json
+    fields:
+      - name: awards
+        label: Awards
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.title}"
+        fields:
+          - name: title
+            label: Award Title
+            type: string
+            required: true
+          - name: badge
+            label: Badge Image (Transparent PNG/SVG)
+            type: image
+            options:
+              media: images
+              path: assets/images/awards
+          - name: description
+            label: Description (Markdown)
+            type: rich-text
+          - name: pdf
+            label: Related PDF Document (Optional)
+            type: file
+            options:
+              media: files
+              path: assets/files
+
+      - name: sections
+        label: Page Text Blocks
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.title}"
+        fields:
+          - name: id
+            label: Section ID (slug)
+            type: string
+            required: true
+          - name: title
+            label: Heading
+            type: string
+          - name: body
+            label: Content (Markdown)
+            type: rich-text
+          - name: image
+            label: Section Image (Optional)
+            type: image
+            options:
+              media: images
+          - name: pdf
+            label: Attachment PDF (Optional)
+            type: file
+            options:
+              media: files
+
+  - name: map_pins
+    label: Club & Event Map Pins
+    type: file
+    path: data/map-pins.json
+    format: json
+    fields:
+      - name: pins
+        label: Map Locations
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.title} ({fields.category})"
+        fields:
+          - name: title
+            label: Club or Venue Name
+            type: string
+            required: true
+          - name: category
+            label: Pin Type
+            type: select
+            default: Club
+            options:
+              values:
+                - Club
+                - Conference
+                - Training
+                - Contest
+          - name: lat
+            label: Latitude
+            type: number
+            required: true
+          - name: lng
+            label: Longitude
+            type: number
+            required: true
+          - name: icon
+            label: Custom Marker Icon (Optional)
+            type: image
+            options:
+              media: images
+          - name: description
+            label: Popup Details (Markdown)
+            type: rich-text
