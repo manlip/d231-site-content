@@ -1,96 +1,100 @@
-# d231-site-content
+# District 231 Website Content, Pages, and Widgets
 
-# Website Content, Assets & Scripts
-
-This repository stores all editable content, transparent images, PDFs, stylesheets, and custom JavaScript widgets for our **Google Sites** frontend.
+This repository holds editable content, static pages, assets, and JavaScript widgets for the District 231 website and Google Sites. GitHub Pages serves the published files over HTTPS; it does not run server-side code.
 
 ## Architecture Overview
 
-To keep the Google Site fast, secure, and easy to edit without database maintenance:
-* **Content Editing (Pages CMS):** Non-technical editors update text (in Markdown), team bios, awards, and images via [Pages CMS](https://pagescms.org).
-* **Live JSON Data (`://githubusercontent.com`):** Frequently edited JSON files in `/data/` are loaded directly from GitHub Raw so updates appear on the site within seconds.
-* **Static Assets & Code (`cdn.jsdelivr.net`):** Transparent PNGs, PDFs, CSS, and JS files are served through the jsDelivr global CDN for instant loading and preserved image transparency.
-* **Google Calendar Proxy:** Calendar events are fetched via a cached Google Apps Script endpoint to keep API keys hidden.
+- **Content management:** Pages CMS edits JSON data and uploads images and documents to this repository.
+- **Static page hosting:** GitHub Actions publishes the website files to GitHub Pages when changes are pushed to `main`.
+- **Multiple pages and widgets:** Each standalone page can have its own URL, and shared or page-specific scripts and styles can power features such as team, events, maps, resources, and awards.
+- **Google Sites embedding:** A complete hosted page can be embedded in an iframe, or a smaller widget can be embedded with its own HTML container and script snippet.
+- **Browser runtime:** Pages and widgets load public JSON and assets from this site. No application server or database is required.
 
----
+Pages CMS currently defines team, awards, resources, and map-pin data. The preview shell has Team, Awards, and Resources tabs; Events and Map remain placeholders until their pages are migrated.
 
 ## Folder Structure
 
 ```text
-├── .pages.yml               # Pages CMS form & media configuration
-├── README.md                # Setup guide and Google Sites embed snippets
-├── data/                    # Editable JSON data (loaded via ://githubusercontent.com)
-│   ├── content.json         # Main site text, Markdown blocks, team, and awards
-│   └── map-pins.json        # Coordinates and labels for Leaflet.js maps
-├── assets/                  # Static media (loaded via cdn.jsdelivr.net)
-│   ├── images/              # General PNGs, SVGs, logos, and map markers
-│   │   ├── team/            # Team member photos
-│   │   └── awards/          # Award badges and transparent logos
-│   └── files/               # Downloadable PDFs and brochures (max 20 MB per file)
-├── css/                     # Global stylesheets (loaded via cdn.jsdelivr.net)
-│   └── main.css
-└── js/                      # Modular frontend scripts (loaded via cdn.jsdelivr.net)
-    ├── utils.js             # Shared fetch + localStorage caching helper
-    ├── content-loader.js    # Renders Markdown content, team, and awards
-    ├── map-loader.js        # Initializes OpenStreetMap + Leaflet.js
-    └── calendar-loader.js   # Renders events from Google Apps Script feed
+├── .github/
+│   └── workflows/
+│       └── pages.yml          # Publishes site files to GitHub Pages
+├── .pages.yml                 # Pages CMS content forms and media configuration
+├── index.html                 # Google Sites-like preview shell with page tabs
+├── pages/                     # Additional standalone pages (add as needed)
+│   ├── events/index.html      # Example route: /pages/events/
+│   ├── map/index.html         # Example route: /pages/map/
+├── widgets/                   # Reusable widget HTML, CSS, and JavaScript (add as needed)
+├── embed_snippet/
+│   ├── team.html              # Team page loaded inside the preview shell
+│   ├── awards.html            # Awards page loaded inside the preview shell
+│   ├── resources.html         # Resources page
+│   └── team_snippet.html      # Google Sites iframe snippet for the team page
+├── assets/
+│   ├── files/                 # Documents and downloadable files
+│   └── images/                # Page and widget images
+│       ├── awards/
+│       └── team/
+├── css/                       # Shared and page-specific stylesheets
+│   ├── awards.css             # Awards page styles
+│   ├── common.css             # Shared embed foundation and hero styles
+│   ├── resources.css          # Resources page styles
+│   └── team.css               # Team page styles
+├── data/
+│   ├── awards.json            # Awards data
+│   ├── resources.json         # Nested resources data
+│   ├── map-pins.json          # Configured for future map data (not yet created)
+│   └── team.json              # Team directory data
+└── js/                        # Shared and page-specific scripts
+    ├── awards-loader.js       # Awards cards, details modal, and period status
+    ├── markdown.js            # Shared Markdown renderer
+    ├── resources-loader.js    # Resources search, categories and dialog
+    ├── team-loader.js         # Team directory renderer
+    └── utils.js               # Shared URL, fetch, cache, escaping and embed resize helpers
 ```
 
----
+The root `index.html` is a test host that imitates a Google Sites page: the top tabs select page content displayed in an iframe. Team, Awards, and Resources load their respective files in `embed_snippet/`; Events and Map remain placeholders until their pages are migrated. Add each page under `embed_snippet/` or `pages/`, then register its URL in the tab list. The deployment workflow publishes `embed_snippet/` as well as future `pages/` and `widgets/` folders. Use URLs that work under the project site base path (`/d231-site-content/`).
+
+## Deploying Pages to GitHub Pages
+
+1. In the repository's **Settings > Pages**, set the source to **GitHub Actions**.
+2. Commit or merge changes to `main`. The workflow at `.github/workflows/pages.yml` publishes `index.html`, `embed_snippet/`, and the shared `assets/`, `css/`, `data/`, and `js/` folders. It also publishes `pages/` and `widgets/` if those folders exist.
+3. After the workflow succeeds, pages are available at the corresponding paths:
+
+   - Preview shell: `https://manlip.github.io/d231-site-content/`
+   - Team page: `https://manlip.github.io/d231-site-content/embed_snippet/team.html`
+   - Awards page: `https://manlip.github.io/d231-site-content/embed_snippet/awards.html`
+   - Resources page: `https://manlip.github.io/d231-site-content/embed_snippet/resources.html`
+   - Example events page: `https://manlip.github.io/d231-site-content/pages/events/`
+   - Example map page: `https://manlip.github.io/d231-site-content/pages/map/`
+
+A page and its required data, styles, scripts, and images must all be included in the published files. Pages CMS changes saved to the repository are published by the same workflow. Public GitHub Pages sites expose their content publicly.
+
+## Using Pages and Widgets in Google Sites
+
+Choose the embed method that matches what you are adding:
+
+### Embed a complete page
+
+In Google Sites, choose **Insert > Embed > By URL** and enter the GitHub Pages URL for the page (for example, the team page URL or the `/pages/events/` URL for an events page). Or choose **By embed code** and use an iframe snippet like [`embed_snippet/team_snippet.html`](embed_snippet/team_snippet.html). Set the frame height to fit the page content.
+
+Each standalone page has its own URL and can be embedded wherever it is needed. The iframe keeps that page's markup, styles, and scripts isolated from the Google Sites document.
+
+### Embed a focused widget
+
+For a compact widget that should sit within a Google Sites embed, provide a snippet containing its HTML container and load its CSS/JavaScript from GitHub Pages. Keep each widget's snippet in `embed_snippet/` and its reusable implementation in `widgets/` (or in the shared `css/` and `js/` folders). Load shared utilities and third-party libraries before the widget script. The widget should initialize only when its container exists.
+
+The current [`team_snippet.html`](embed_snippet/team_snippet.html) uses an iframe to the complete team page. The root preview shell uses the same page-in-an-iframe approach to imitate Google Sites. A direct-script snippet is a different integration: it inserts widget markup into the host embed and loads only the code needed for that widget. Create page- or widget-specific snippets for events, maps, resources, awards, or other features as they are implemented.
 
 ## Editing Content with Pages CMS
 
-1. Go to [app.pagescms.org](https://pagescms.org) and log in with your GitHub account.
-2. Select this repository (`YOUR_USERNAME/YOUR_REPO`).
-3. Click **Website Content** in the left sidebar to add, edit, or reorder entries.
-   * **Markdown Formatting:** Use the rich-text toolbar for bold text, bullet lists, and links. Pages CMS automatically saves clean Markdown inside `data/content.json`.
-   * **Image Uploads:** Upload transparent PNGs or WebP files directly in the form fields. Files automatically route to `assets/images/team/` or `assets/images/awards/`.
-4. Click **Save** to commit changes. Updates go live on the website within seconds.
+1. Sign in to [Pages CMS](https://app.pagescms.org) and select this repository.
+2. Edit **District Team**, **Awards**, or **Resources (JSON)**. Resources uses a code editor to preserve the nested category → subcategory → list structure in `data/resources.json`; entries can include `visibility`, `title`, `description`, `description2`, `description3`, `imageLink`, and `resourceLink`. Award entries support visibility, category, subcategory, period, image, Markdown descriptions, related links, and a PDF attachment. Map pins are configured for future use.
+3. Save the changes to the repository. GitHub Actions deploys the updated files from `main`.
 
----
+Team photos belong in `assets/images/team/`; award images belong in `assets/images/awards/`. Do not add credentials or private information: this repository and its public Pages site are publicly accessible.
 
-## Google Sites Embed Snippets
+Team, awards, and resources read their own JSON files and use repository-relative paths for uploaded images. Some existing records still include external image URLs; replace them with appropriately sized repository images when available and permitted. The embedded pages also load Montserrat from Google Fonts.
 
-In Google Sites, go to **Insert > Embed > Embed code** and paste the corresponding snippet below.
+For awards, `period` can contain a date range, a single deadline, or multiple deadlines separated by semicolons. The card is shaded after the latest deadline's local calendar day ends. English month names, ISO dates, and day/month/year dates are supported. If an award has `periodEnd` or `endDate`, that field takes precedence over `period` for the deadline; the displayed period remains unchanged.
 
-### 1. Main Content, Team & Awards Page
-```html
-<link rel="stylesheet" href="https://jsdelivr.net">
-
-<div id="site-app">Loading content...</div>
-
-<script src="https://jsdelivr.net"></script>
-<script src="https://jsdelivr.net"></script>
-<script src="https://jsdelivr.net"></script>
-```
-
-### 2. Interactive Map Page (OpenStreetMap + Leaflet.js)
-```html
-<link rel="stylesheet" href="https://unpkg.com" />
-<link rel="stylesheet" href="https://jsdelivr.net">
-
-<div id="map" style="width: 100%; height: 500px;"></div>
-
-<script src="https://unpkg.com"></script>
-<script src="https://jsdelivr.net"></script>
-<script src="https://jsdelivr.net"></script>
-```
-
-### 3. Google Calendar Events Widget
-```html
-<link rel="stylesheet" href="https://jsdelivr.net">
-
-<div id="calendar-events">Loading schedule...</div>
-
-<script src="https://jsdelivr.net"></script>
-<script src="https://jsdelivr.net"></script>
-```
-
----
-
-## Important Maintenance Rules
-
-* **Keep Repository Public:** Both `://githubusercontent.com` and `cdn.jsdelivr.net` require this repository to remain **Public**. Never commit private API keys or passwords here.
-* **File Size Limit:** Keep individual PDFs and images under **20 MB** so jsDelivr serves them reliably.
-* **Updating CSS or JS Files:** jsDelivr caches `@main` links for up to 12–24 hours. When you edit a `.css` or `.js` file, clear the CDN cache immediately using the [jsDelivr Purge Tool](https://jsdelivr.com) (or replace `@main` with the latest commit hash).
-* **JSON Edits Require No Purge:** Edits made to `data/*.json` via Pages CMS are loaded from `://githubusercontent.com` and update automatically without manual purging.
+The JSON files are snapshots managed in the repository; changes in the legacy spreadsheet do not automatically update them. Each page loads only its own data and styles, plus shared assets. Cached data is shown while the page refreshes; a warning appears if refreshing fails. Browser storage may be unavailable in embedded contexts, in which case pages still fetch normally. Test iframe sizing in Google Sites and set a suitable height if automatic sizing is not supported.

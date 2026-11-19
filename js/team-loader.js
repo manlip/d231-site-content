@@ -4,6 +4,7 @@ const TEAM_CONFIG = {
     cachePrefix: "google_sheet_team",
     categoryOrder: ["Trio", "Core Team", "Divisions"] // "Committees" always forced last
 };
+let requestEmbedResize = () => {};
 
 function initTeamPage() {
     const root = document.getElementById("team-root");
@@ -15,6 +16,7 @@ function initTeamPage() {
         `calc(${TEAM_CONFIG.cardsPerRow * 147}px + ${TEAM_CONFIG.cardsPerRow - 1}rem)`
     );
 
+    requestEmbedResize = SiteUtils.observeEmbedSize(document.querySelector(".page"));
     const load = () => {
         if (notice) notice.hidden = true;
         SiteUtils.loadJsonWithSWR(TEAM_CONFIG.dataPath, TEAM_CONFIG.cachePrefix, {
@@ -27,6 +29,7 @@ function initTeamPage() {
                 if (!notice) return;
                 notice.textContent = "Could not refresh the team. Showing saved data, which may be outdated.";
                 notice.hidden = false;
+                requestEmbedResize();
             },
             onFatalError: (error) => {
                 root.innerHTML = `
@@ -45,11 +48,6 @@ function initTeamPage() {
     };
 
     load();
-    window.addEventListener("load", requestEmbedResize);
-    window.addEventListener("resize", requestEmbedResize);
-    if (window.ResizeObserver) {
-        new ResizeObserver(requestEmbedResize).observe(document.querySelector(".page"));
-    }
 }
 
 function validateTeamData(data) {
@@ -80,20 +78,6 @@ function validateTeamData(data) {
     });
 
     return data;
-}
-
-function requestEmbedResize() {
-    if (window.parent === window) return;
-
-    const height = Math.ceil(Math.max(
-        document.documentElement.scrollHeight,
-        document.body.scrollHeight
-    ));
-
-    if (window.super && typeof window.super.resize === "function") {
-        window.super.resize();
-    }
-    window.parent.postMessage({ sentinel: "amp", type: "embed-size", height }, "*");
 }
 
 function normalizeTeamGroups(rawData) {
@@ -233,11 +217,7 @@ function bindFlipInteractions(root) {
 }
 
 function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+    return SiteUtils.escapeHtml(str);
 }
 
 initTeamPage();

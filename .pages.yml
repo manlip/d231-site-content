@@ -82,10 +82,10 @@ content:
             label: Responsibilities (Markdown)
             type: rich-text
 
-  - name: general_content
-    label: Awards & General Content
+  - name: awards
+    label: Awards
     type: file
-    path: data/content.json
+    path: data/awards.json
     format: json
     fields:
       - name: awards
@@ -96,6 +96,14 @@ content:
             collapsed: true
             summary: "{fields.title}"
         fields:
+          - name: visibility
+            label: Visibility
+            type: select
+            default: public
+            options:
+              values:
+                - public
+                - hidden
           - name: title
             label: Award Title
             type: string
@@ -109,7 +117,7 @@ content:
           - name: period
             label: Award Period
             type: string
-          - name: badge
+          - name: image
             label: Badge Image (Transparent PNG/SVG)
             type: image
             options:
@@ -121,7 +129,10 @@ content:
           - name: description2
             label: Additional Details (Markdown)
             type: rich-text
-          - name: resourceLinks
+          - name: description3
+            label: Additional Notes
+            type: rich-text
+          - name: resourceLink
             label: Related Links (Markdown)
             type: rich-text
           - name: pdf
@@ -131,34 +142,11 @@ content:
               media: files
               path: assets/files
 
-      - name: sections
-        label: Page Text Blocks
-        type: object
-        list:
-          collapsible:
-            collapsed: true
-            summary: "{fields.title}"
-        fields:
-          - name: id
-            label: Section ID (slug)
-            type: string
-            required: true
-          - name: title
-            label: Heading
-            type: string
-          - name: body
-            label: Content (Markdown)
-            type: rich-text
-          - name: image
-            label: Section Image (Optional)
-            type: image
-            options:
-              media: images
-          - name: pdf
-            label: Attachment PDF (Optional)
-            type: file
-            options:
-              media: files
+  - name: resources
+    label: Resources (JSON)
+    type: file
+    path: data/resources.json
+    format: code
 
   - name: map_pins
     label: Club & Event Map Pins

@@ -1,0 +1,89 @@
+# 1. Create all folders
+mkdir -p data assets/images/team assets/images/awards assets/files css js
+
+# 2. Add .gitkeep files so Git tracks empty asset folders
+touch assets/images/team/.gitkeep assets/images/awards/.gitkeep assets/files/.gitkeep
+
+# 3. Create starter JSON data files
+cat << 'EOF' > data/content.json
+{
+  "team": [],
+  "awards": []
+}
+EOF
+
+cat << 'EOF' > data/map-pins.json
+{
+  "pins": []
+}
+EOF
+
+# 4. Create starter CSS and JS files
+cat << 'EOF' > css/main.css
+/* Global styles for Google Sites embeds */
+.transparent-img {
+  background: transparent;
+  max-width: 100%;
+  height: auto;
+}
+EOF
+
+touch js/utils.js js/content-loader.js js/map-loader.js js/calendar-loader.js
+
+# 5. Create .pages.yml configuration for Pages CMS
+cat << 'EOF' > .pages.yml
+media:
+  - name: images
+    label: General Images
+    input: assets/images
+    output: /assets/images
+  - name: files
+    label: PDFs & Documents
+    input: assets/files
+    output: /assets/files
+
+content:
+  - name: site_content
+    label: Website Content
+    type: file
+    path: data/content.json
+    format: json
+    fields:
+      - name: team
+        label: Team Members
+        type: object
+        list: true
+        fields:
+          - name: name
+            label: Name
+            type: string
+          - name: photo
+            label: Photo
+            type: image
+            options:
+              media: images
+              path: assets/images/team
+          - name: bio
+            label: Bio (Markdown)
+            type: rich-text
+
+      - name: awards
+        label: Awards
+        type: object
+        list: true
+        fields:
+          - name: title
+            label: Award Title
+            type: string
+          - name: badge
+            label: Badge Image
+            type: image
+            options:
+              media: images
+              path: assets/images/awards
+EOF
+
+# 6. Stage, commit, and push to GitHub
+git add .
+git commit -m "Initialize site content folder structure and Pages CMS config"
+git push origin main

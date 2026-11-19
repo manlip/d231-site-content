@@ -1,5 +1,5 @@
 const AWARDS_CONFIG = {
-    dataPath: "data/content.json",
+    dataPath: "data/awards.json",
     cachePrefix: "district_awards",
     cardsPerRow: 5,
     minimumCardWidth: 150
@@ -8,6 +8,7 @@ const AWARDS_CONFIG = {
 const AWARD_ICON = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"></circle><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"></path></svg>';
 let awardsByIndex = [];
 let previouslyFocusedElement = null;
+let requestAwardsResize = () => {};
 
 function initAwardsPage() {
     const root = document.getElementById("awards-container");
@@ -16,6 +17,7 @@ function initAwardsPage() {
     document.documentElement.style.setProperty("--award-columns", AWARDS_CONFIG.cardsPerRow);
     document.documentElement.style.setProperty("--award-min-card", `${AWARDS_CONFIG.minimumCardWidth}px`);
 
+    requestAwardsResize = SiteUtils.observeEmbedSize(document.querySelector(".awards-page"));
     loadAwards(root);
 
     root.addEventListener("click", (event) => {
@@ -31,9 +33,6 @@ function initAwardsPage() {
         if (event.key === "Escape" && !modal.hidden) closeAwardModal();
     });
     document.addEventListener("error", handleAwardImageError, true);
-    window.addEventListener("load", requestAwardsResize);
-    window.addEventListener("resize", requestAwardsResize);
-    if (window.ResizeObserver) new ResizeObserver(requestAwardsResize).observe(document.querySelector(".awards-page"));
 }
 
 function loadAwards(root) {
@@ -236,80 +235,8 @@ function parseAwardLinks(award) {
         .filter((entry) => /^https?:\/\//i.test(entry.url) || /^mailto:/i.test(entry.url));
 }
 
-function renderAwardMarkdown(text) {
-    const lines = String(text).replace(/\r\n?/g, "\n").split("\n");
-    const output = [];
-    let paragraph = [];
-    let list = null;
-    const flushParagraph = () => {
-        if (paragraph.length) output.push(`<p>${paragraph.map(renderAwardInline).join("<br>")}</p>`);
-        paragraph = [];
-    };
-    const flushList = () => {
-        if (list) output.push(`<${list.type}>${list.items.map((item) => `<li>${renderAwardInline(item)}</li>`).join("")}</${list.type}>`);
-        list = null;
-    };
-
-    lines.forEach((line) => {
-        let match;
-        if (!line.trim()) {
-            flushParagraph();
-            flushList();
-        } else if ((match = line.match(/^\s{0,3}(#{1,4})\s+(.*)$/))) {
-            flushParagraph();
-            flushList();
-            const level = Math.min(match[1].length + 2, 6);
-            output.push(`<h${level}>${renderAwardInline(match[2])}</h${level}>`);
-        } else if ((match = line.match(/^\s*[-*+]\s+(.*)$/))) {
-            flushParagraph();
-            if (!list || list.type !== "ul") {
-                flushList();
-                list = { type: "ul", items: [] };
-            }
-            list.items.push(match[1]);
-        } else if ((match = line.match(/^\s*\d+[.)]\s+(.*)$/))) {
-            flushParagraph();
-            if (!list || list.type !== "ol") {
-                flushList();
-                list = { type: "ol", items: [] };
-            }
-            list.items.push(match[1]);
-        } else if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) {
-            flushParagraph();
-            flushList();
-            output.push("<hr>");
-        } else if ((match = line.match(/^\s*>\s?(.*)$/))) {
-            flushParagraph();
-            flushList();
-            output.push(`<blockquote>${renderAwardInline(match[1])}</blockquote>`);
-        } else {
-            flushList();
-            paragraph.push(line.trim());
-        }
-    });
-    flushParagraph();
-    flushList();
-    return output.join("");
-}
-
-function renderAwardInline(text) {
-    const escaped = escapeAwardHtml(text);
-    const tokens = [];
-    let output = escaped.replace(/`([^`]+)`/g, (_match, code) => {
-        tokens.push(`<code>${code}</code>`);
-        return `\u0000${tokens.length - 1}\u0000`;
-    });
-
-    output = output.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/gi, (_match, label, url) =>
-        `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`);
-    output = output.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)(?=$|[\s<)])/g, (_match, prefix, url) =>
-        `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
-    output = output.replace(/\*\*([^*]+)\*\*|__([^_]+)__/g, (_match, a, b) => `<strong>${a || b}</strong>`)
-        .replace(/(^|[^*\w])\*([^*\s][^*]*)\*(?!\*)/g, "$1<em>$2</em>")
-        .replace(/(^|[^_\w])_([^_\s][^_]*)_(?!\w)/g, "$1<em>$2</em>")
-        .replace(/~~([^~]+)~~/g, "<del>$1</del>");
-    return output.replace(/\u0000(\d+)\u0000/g, (_match, index) => tokens[Number(index)]);
-}
+const renderAwardMarkdown = SiteMarkdown.render;
+const renderAwardInline = SiteMarkdown.renderInline;
 
 function plainAwardText(text) {
     return String(text)
@@ -333,30 +260,40 @@ function formatAwardPeriod(award) {
 }
 
 function isAwardOverdue(award) {
-    const source = award.periodEnd || award.endDate || award.period;
+    const source = [award.periodEnd, award.endDate, award.period]
+        .find((value) => value != null && String(value).trim());
     if (!source) return false;
-    const text = String(source).replace(/[*_`~]/g, "");
+    let text = String(source).replace(/[*_`~]/g, "");
     const dates = [];
+    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
     const addDate = (year, month, day) => {
-        const date = new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59);
-        if (!Number.isNaN(date.getTime())) dates.push(date);
+        const date = new Date(Number(year), Number(month) - 1, Number(day));
+        if (date.getFullYear() !== Number(year) || date.getMonth() !== Number(month) - 1 || date.getDate() !== Number(day)) return;
+        date.setHours(23, 59, 59, 999);
+        dates.push(date.getTime());
+    };
+    const consume = (pattern, parse) => {
+        text = text.replace(pattern, (...match) => {
+            parse(match);
+            return " ";
+        });
     };
 
-    let match;
-    const isoDate = /(\d{4})-(\d{1,2})-(\d{1,2})/g;
-    while ((match = isoDate.exec(text))) addDate(match[1], match[2], match[3]);
-    const localDate = /(\d{1,2})[./](\d{1,2})[./](\d{4})/g;
-    while ((match = localDate.exec(text))) addDate(match[3], match[2], match[1]);
-    const monthYear = /\b([A-Za-z]{3,9})\.?\s+(\d{4})\b/g;
-    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-    while ((match = monthYear.exec(text))) {
-        const month = months.indexOf(match[1].slice(0, 3).toLowerCase());
-        if (month >= 0) dates.push(new Date(Number(match[2]), month + 1, 0, 23, 59, 59));
-    }
-    const year = /\b((?:19|20)\d{2})\b/g;
-    while ((match = year.exec(text))) dates.push(new Date(Number(match[1]), 11, 31, 23, 59, 59));
-    if (!dates.length) return false;
-    return Math.max(...dates.map((date) => date.getTime())) < Date.now();
+    consume(/\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?/g, (match) => {
+        const date = new Date(match[0]);
+        if (!Number.isNaN(date.getTime())) addDate(date.getFullYear(), date.getMonth() + 1, date.getDate());
+    });
+    consume(/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/g, (match) => addDate(match[1], match[2], match[3]));
+    consume(/\b(\d{1,2})[./](\d{1,2})[./](\d{4})\b/g, (match) => addDate(match[3], match[2], match[1]));
+    consume(/\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})\b/gi,
+        (match) => addDate(match[3], months.indexOf(match[1].slice(0, 3).toLowerCase()) + 1, match[2]));
+    consume(/\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?\s+(\d{4})\b/gi,
+        (match) => {
+            const month = months.indexOf(match[1].slice(0, 3).toLowerCase()) + 1;
+            addDate(match[2], month, new Date(Number(match[2]), month, 0).getDate());
+        });
+    consume(/\b((?:19|20)\d{2})\b/g, (match) => addDate(match[1], 12, 31));
+    return dates.length > 0 && Math.max(...dates) < Date.now();
 }
 
 function handleAwardImageError(event) {
@@ -371,19 +308,7 @@ function handleAwardImageError(event) {
 }
 
 function escapeAwardHtml(value) {
-    return String(value == null ? "" : value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-}
-
-function requestAwardsResize() {
-    if (window.parent === window) return;
-    const height = Math.ceil(Math.max(document.documentElement.scrollHeight, document.body.scrollHeight));
-    if (window.super && typeof window.super.resize === "function") window.super.resize();
-    window.parent.postMessage({ sentinel: "amp", type: "embed-size", height }, "*");
+    return SiteUtils.escapeHtml(value);
 }
 
 initAwardsPage();
