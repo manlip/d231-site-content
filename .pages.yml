@@ -143,10 +143,62 @@ content:
               path: assets/files
 
   - name: resources
-    label: Resources (JSON)
+    label: Resources
     type: file
     path: data/resources.json
-    format: code
+    format: json
+    fields:
+      - name: resources
+        label: Resources
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.title} ({fields.category})"
+        fields:
+          - name: visibility
+            label: Visibility
+            type: select
+            default: public
+            options:
+              values:
+                - public
+                - hidden
+          - name: title
+            label: Resource Title
+            type: string
+            required: true
+          - name: category
+            label: Category
+            type: string
+            required: true
+          - name: subcategory
+            label: Subcategory
+            type: string
+          - name: imageLink
+            label: Resource Image
+            type: image
+            options:
+              media: images
+              path: assets/images/resources
+          - name: description
+            label: Description (Markdown)
+            type: rich-text
+          - name: description2
+            label: Additional Details (Markdown)
+            type: rich-text
+          - name: description3
+            label: Additional Notes (Markdown)
+            type: rich-text
+          - name: resourceLink
+            label: Related Links (Markdown)
+            type: rich-text
+          - name: type
+            label: Resource Type
+            type: string
+          - name: categoryIcon
+            label: Category Icon
+            type: string
 
   - name: map_pins
     label: Club & Event Map Pins

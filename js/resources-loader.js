@@ -39,7 +39,17 @@
     }
 
     function validateResources(data) {
-        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Expected resource categories.');
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Expected a resource object.');
+        if (Object.prototype.hasOwnProperty.call(data, 'resources')) {
+            if (!Array.isArray(data.resources) || data.resources.some(item =>
+                !item || typeof item !== 'object' || Array.isArray(item) ||
+                (item.category != null && typeof item.category !== 'string') ||
+                (item.subcategory != null && typeof item.subcategory !== 'string')
+            )) {
+                throw new Error('Expected a list of resource objects with text categories.');
+            }
+            return data;
+        }
         for (const [category, groups] of Object.entries(data)) {
             if (!groups || typeof groups !== 'object' || Array.isArray(groups)) throw new Error(`Invalid category: ${category}`);
             for (const [group, items] of Object.entries(groups)) {
@@ -51,13 +61,26 @@
         return data;
     }
 
+    function groupResources(data) {
+        if (!Object.prototype.hasOwnProperty.call(data, 'resources')) return data;
+        const categories = Object.create(null);
+        data.resources.forEach(item => {
+            const category = (item.category || '').trim() || 'Other';
+            const subcategory = (item.subcategory || '').trim();
+            if (!categories[category]) categories[category] = Object.create(null);
+            if (!categories[category][subcategory]) categories[category][subcategory] = [];
+            categories[category][subcategory].push(item);
+        });
+        return categories;
+    }
+
     async function refreshData() {
         if (refreshing) return;
         refreshing = true;
         try {
             await SiteUtils.loadJsonWithSWR('data/resources.json', 'district_resources', {
                 validate: validateResources,
-                onRender: data => { setStaleNotice(false); renderAccordion(data); },
+                onRender: data => { setStaleNotice(false); renderAccordion(groupResources(data)); },
                 onStaleError: () => setStaleNotice(true),
                 onFatalError: error => showStatus(error.message, true, true)
             });

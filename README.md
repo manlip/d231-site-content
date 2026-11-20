@@ -41,7 +41,7 @@ Pages CMS currently defines team, awards, resources, and map-pin data. The previ
 │   └── team.css               # Team page styles
 ├── data/
 │   ├── awards.json            # Awards data
-│   ├── resources.json         # Nested resources data
+│   ├── resources.json         # Resource list data
 │   ├── map-pins.json          # Configured for future map data (not yet created)
 │   └── team.json              # Team directory data
 └── js/                        # Shared and page-specific scripts
@@ -90,7 +90,7 @@ The separate [`team2.html`](embed_snippet/team2.html) page and [`team2_snippet.h
 ## Editing Content with Pages CMS
 
 1. Sign in to [Pages CMS](https://app.pagescms.org) and select this repository.
-2. Edit **District Team**, **Awards**, or **Resources (JSON)**. Resources uses a code editor to preserve the nested category → subcategory → list structure in `data/resources.json`; entries can include `visibility`, `title`, `description`, `description2`, `description3`, `imageLink`, and `resourceLink`. Award entries support visibility, category, subcategory, period, image, Markdown descriptions, related links, and a PDF attachment. Map pins are configured for future use.
+2. Edit **District Team**, **Awards**, or **Resources** using their structured forms. Resource entries include visibility, category, subcategory, title, image, Markdown descriptions, related links, and optional resource type and category icon. Resources are grouped by category and subcategory for display. Award entries support visibility, category, subcategory, period, image, Markdown descriptions, related links, and a PDF attachment. Map pins are configured for future use.
 3. Save the changes to the repository. GitHub Actions deploys the updated files from `main`.
 
 Team photos belong in `assets/images/team/`; award images belong in `assets/images/awards/`. Do not add credentials or private information: this repository and its public Pages site are publicly accessible.
