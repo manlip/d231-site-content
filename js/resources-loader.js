@@ -7,11 +7,7 @@
     const escapeHtml = SiteUtils.escapeHtml;
     const isEmbedded = window.self !== window.top;
     if (isEmbedded) document.documentElement.classList.add('embedded');
-    const requestResize = SiteUtils.observeEmbedSize(document.body, () => {
-        const overlay = document.getElementById('modal-overlay');
-        return isEmbedded && overlay.style.display === 'flex'
-            ? Math.max(overlay.offsetTop + overlay.offsetHeight + 48, 800) : 0;
-    });
+    const requestResize = SiteUtils.observeEmbedSize(document.body);
 
     function showStatus(message, isError, withRetry) {
         const container = document.getElementById('accordion-container');
@@ -329,6 +325,7 @@
     // ---------- Popup ----------
 
     let lastFocus = null;
+    let stopModalObservation = () => {};
 
     function openModal(index, trigger) {
         const item = allItems[index];
@@ -374,9 +371,9 @@
         footer.hidden = false;
 
         document.getElementById('modal-overlay').style.display = 'flex';
+        document.documentElement.classList.add('modal-open');
+        stopModalObservation = SiteUtils.observeVisibleModal(document.getElementById('modal-overlay'));
         document.querySelector('.modal-close').focus({ preventScroll: true });
-        // Also scrolls the host page when framed, so the popup is actually visible
-        document.querySelector('.modal-window').scrollIntoView({ block: 'start' });
         requestResize();
     }
 
@@ -385,9 +382,10 @@
         if (!event || event.target === overlay) {
             const wasOpen = overlay.style.display === 'flex';
             overlay.style.display = 'none';
+            stopModalObservation();
+            document.documentElement.classList.remove('modal-open');
             if (wasOpen && lastFocus && typeof lastFocus.focus === 'function') {
                 lastFocus.focus({ preventScroll: true });
-                if (typeof lastFocus.scrollIntoView === 'function') lastFocus.scrollIntoView({ block: 'center' });
             }
             requestResize();
         }

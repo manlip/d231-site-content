@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="District 231 Toastmasters team directory">
+    <title>District 231 Team 2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/team.css">
+    <link rel="stylesheet" href="../css/team2.css">
+</head>
+<body>
+    <main class="page">
+        <header class="hero">
+            <p class="hero-label">Toastmasters District 231</p>
+            <h1>Meet the District Team</h1>
+            <p>Meet the volunteers supporting our clubs, leaders and members across the district.</p>
+        </header>
+        <p id="team-notice" class="notice" role="status" hidden>
+            Could not refresh the team. Showing saved data, which may be outdated.
+        </p>
+        <div id="team-root">
+            <p class="status" role="status">Loading team...</p>
+        </div>
+    </main>
+    <div class="team2-overlay" role="dialog" aria-modal="true" aria-label="Team member details" hidden>
+        <div class="team2-card-container">
+            <div class="team2-stage"></div>
+            <button class="team2-close" type="button" aria-label="Close team member details">&times;</button>
+        </div>
+    </div>
+    <script src="../js/utils.js"></script>
+    <script src="../js/team2_interactions.js"></script>
+    <script src="../js/team-loader.js"></script>
+</body>
+</html>

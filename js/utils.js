@@ -16,6 +16,45 @@ const SiteUtils = {
             .replace(/'/g, "&#39;");
     },
 
+    observeVisibleModal(overlay) {
+        if (!window.IntersectionObserver) return () => {};
+        const updateVisibleArea = (rect, visible) => {
+            overlay.style.setProperty("--modal-visible-top", `${Math.max(0, visible.top - rect.top)}px`);
+            overlay.style.setProperty("--modal-visible-bottom", `${Math.max(0, rect.bottom - visible.bottom)}px`);
+            overlay.style.setProperty("--modal-visible-height", `${visible.height}px`);
+        };
+        const observer = new window.IntersectionObserver((entries) => {
+            const entry = entries[0];
+            if (!entry.isIntersecting) return;
+            updateVisibleArea(entry.boundingClientRect, entry.intersectionRect);
+        }, { threshold: Array.from({ length: 101 }, (_, index) => index / 100) });
+        observer.observe(overlay);
+        const frame = window.frameElement;
+        const parent = frame && window.parent;
+        const updateFromParent = () => {
+            const frameRect = frame.getBoundingClientRect();
+            const rect = overlay.getBoundingClientRect();
+            const top = Math.max(rect.top, -frameRect.top);
+            const bottom = Math.min(rect.bottom, parent.innerHeight - frameRect.top);
+            if (bottom > top) updateVisibleArea(rect, { top, bottom, height: bottom - top });
+        };
+        if (parent) {
+            parent.addEventListener("scroll", updateFromParent, { passive: true });
+            parent.addEventListener("resize", updateFromParent);
+            updateFromParent();
+        }
+        return () => {
+            if (parent) {
+                parent.removeEventListener("scroll", updateFromParent);
+                parent.removeEventListener("resize", updateFromParent);
+            }
+            observer.disconnect();
+            overlay.style.removeProperty("--modal-visible-top");
+            overlay.style.removeProperty("--modal-visible-bottom");
+            overlay.style.removeProperty("--modal-visible-height");
+        };
+    },
+
     observeEmbedSize(element, minimumHeight = () => 0) {
         let queued = false;
         const requestResize = () => {

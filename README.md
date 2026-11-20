@@ -10,7 +10,7 @@ This repository holds editable content, static pages, assets, and JavaScript wid
 - **Google Sites embedding:** A complete hosted page can be embedded in an iframe, or a smaller widget can be embedded with its own HTML container and script snippet.
 - **Browser runtime:** Pages and widgets load public JSON and assets from this site. No application server or database is required.
 
-Pages CMS currently defines team, awards, resources, and map-pin data. The preview shell has Team, Awards, and Resources tabs; Events and Map remain placeholders until their pages are migrated.
+Pages CMS currently defines team, awards, resources, and map-pin data. The preview shell has Team, Team 2, Awards, and Resources tabs; Events and Map remain placeholders until their pages are migrated.
 
 ## Folder Structure
 
@@ -84,6 +84,8 @@ Each standalone page has its own URL and can be embedded wherever it is needed. 
 For a compact widget that should sit within a Google Sites embed, provide a snippet containing its HTML container and load its CSS/JavaScript from GitHub Pages. Keep each widget's snippet in `embed_snippet/` and its reusable implementation in `widgets/` (or in the shared `css/` and `js/` folders). Load shared utilities and third-party libraries before the widget script. The widget should initialize only when its container exists.
 
 The current [`team_snippet.html`](embed_snippet/team_snippet.html) uses an iframe to the complete team page. The root preview shell uses the same page-in-an-iframe approach to imitate Google Sites. A direct-script snippet is a different integration: it inserts widget markup into the host embed and loads only the code needed for that widget. Create page- or widget-specific snippets for events, maps, resources, awards, or other features as they are implemented.
+
+The separate [`team2.html`](embed_snippet/team2.html) page and [`team2_snippet.html`](embed_snippet/team2_snippet.html) offer an animated alternative using the same team data. Configure the pause before flipping with `TEAM2_FLIP_DELAY_MS` in `js/team2_interactions.js`.
 
 ## Editing Content with Pages CMS
 

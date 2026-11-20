@@ -9,6 +9,7 @@ const AWARD_ICON = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stro
 let awardsByIndex = [];
 let previouslyFocusedElement = null;
 let requestAwardsResize = () => {};
+let stopAwardModalObservation = () => {};
 
 function initAwardsPage() {
     const root = document.getElementById("awards-container");
@@ -21,8 +22,12 @@ function initAwardsPage() {
     loadAwards(root);
 
     root.addEventListener("click", (event) => {
-        const detailsButton = event.target.closest("[data-award-index]");
-        if (detailsButton) openAwardModal(Number(detailsButton.dataset.awardIndex));
+        const card = event.target.closest(".award-card");
+        if (!card || !root.contains(card)) return;
+        const detailsButton = card.querySelector("[data-award-index]");
+        if (!detailsButton) return;
+        detailsButton.focus({ preventScroll: true });
+        openAwardModal(Number(detailsButton.dataset.awardIndex));
     });
 
     const modal = document.getElementById("award-modal");
@@ -30,7 +35,23 @@ function initAwardsPage() {
         if (event.target === modal || event.target.closest("[data-action='close']")) closeAwardModal();
     });
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && !modal.hidden) closeAwardModal();
+        if (modal.hidden) return;
+        if (event.key === "Escape") {
+            closeAwardModal();
+        } else if (event.key === "Tab") {
+            const focusable = [...modal.querySelectorAll("button, a[href], [tabindex]:not([tabindex='-1'])")]
+                .filter((element) => !element.disabled && !element.closest("[hidden]"));
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
     });
     document.addEventListener("error", handleAwardImageError, true);
 }
@@ -169,7 +190,9 @@ function openAwardModal(index) {
     const modal = document.getElementById("award-modal");
     document.getElementById("award-modal-content").innerHTML = renderAwardDetails(award);
     modal.hidden = false;
-    modal.querySelector(".modal-close").focus();
+    document.documentElement.classList.add("modal-open");
+    stopAwardModalObservation = SiteUtils.observeVisibleModal(modal);
+    modal.querySelector(".modal-close").focus({ preventScroll: true });
     requestAwardsResize();
 }
 
@@ -201,7 +224,9 @@ function closeAwardModal() {
     const modal = document.getElementById("award-modal");
     if (modal.hidden) return;
     modal.hidden = true;
-    previouslyFocusedElement?.focus();
+    stopAwardModalObservation();
+    document.documentElement.classList.remove("modal-open");
+    previouslyFocusedElement?.focus({ preventScroll: true });
     requestAwardsResize();
 }
 

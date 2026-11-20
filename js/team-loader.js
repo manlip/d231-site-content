@@ -156,16 +156,17 @@ function renderMemberCard(member) {
     const role = member.role || "";
     const resp = member.responsability || member.responsibility || member.description2 || "Details coming soon.";
     const imgUrl = SiteUtils.getAssetUrl(member.imageLink || member.image);
+    const memberInfo = `
+      <h3>${escapeHtml(name)}</h3>
+      <p class="role">${escapeHtml(role || "Role not provided")}</p>`;
 
     const placeholder = `
       <div class="portrait" aria-hidden="true">
         <svg viewBox="0 0 24 24" focusable="false">
           <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v2h16v-2c0-2.8-3.6-5-8-5z"></path>
         </svg>
-      </div>
-      <h3>${escapeHtml(name)}</h3>
-      <p class="role">${escapeHtml(role || "Role not provided")}</p>`;
-    const frontContent = imgUrl
+      </div>`;
+    const portrait = imgUrl
         ? `<img src="${escapeHtml(imgUrl)}" alt="${escapeHtml(name)}${role ? ` - ${escapeHtml(role)}` : ""}" loading="lazy"><div class="image-fallback" hidden>${placeholder}</div>`
         : placeholder;
     const responsibility = resp && String(resp).trim()
@@ -175,7 +176,10 @@ function renderMemberCard(member) {
     return `
     <article class="card" role="button" tabindex="0" aria-pressed="false" aria-label="Show responsibilities for ${escapeHtml(name)}" data-member-name="${escapeHtml(name)}">
       <div class="card-inner">
-        <div class="face front${imgUrl ? " image-card" : ""}">${frontContent}</div>
+        <div class="face front">
+          <div class="image-area">${portrait}</div>
+          <div class="member-info">${memberInfo}</div>
+        </div>
         <div class="face back" inert aria-hidden="true">
           <h3>${escapeHtml(role || "Role not provided")}</h3>
           <div class="details" tabindex="0" aria-label="Details for ${escapeHtml(name)}">${responsibility}</div>
@@ -186,17 +190,25 @@ function renderMemberCard(member) {
 }
 
 function bindFlipInteractions(root) {
+    const setFlipped = (card, flipped) => {
+        card.classList.toggle("is-flipped", flipped);
+        card.setAttribute("aria-pressed", String(flipped));
+        const front = card.querySelector(".front");
+        const back = card.querySelector(".back");
+        front.inert = flipped;
+        back.inert = !flipped;
+        front.setAttribute("aria-hidden", String(flipped));
+        back.setAttribute("aria-hidden", String(!flipped));
+        card.setAttribute("aria-label", `${flipped ? "Show front for" : "Show responsibilities for"} ${card.dataset.memberName}`);
+    };
+
     root.querySelectorAll(".card").forEach((card) => {
         const toggle = () => {
-            const flipped = card.classList.toggle("is-flipped");
-            card.setAttribute("aria-pressed", String(flipped));
-            const front = card.querySelector(".front");
-            const back = card.querySelector(".back");
-            front.inert = flipped;
-            back.inert = !flipped;
-            front.setAttribute("aria-hidden", String(flipped));
-            back.setAttribute("aria-hidden", String(!flipped));
-            card.setAttribute("aria-label", `${flipped ? "Show front for" : "Show responsibilities for"} ${card.dataset.memberName}`);
+            const flipped = !card.classList.contains("is-flipped");
+            if (flipped) {
+                root.querySelectorAll(".card.is-flipped").forEach((openCard) => setFlipped(openCard, false));
+            }
+            setFlipped(card, flipped);
         };
         card.addEventListener("click", toggle);
         card.addEventListener("keydown", (e) => {
@@ -210,7 +222,6 @@ function bindFlipInteractions(root) {
     root.querySelectorAll(".front img").forEach((image) => {
         image.addEventListener("error", () => {
             image.hidden = true;
-            image.parentElement.classList.remove("image-card");
             image.nextElementSibling.hidden = false;
         }, { once: true });
     });

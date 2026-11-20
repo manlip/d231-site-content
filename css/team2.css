@@ -1,0 +1,71 @@
+.team2-overlay {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: calc(2rem + var(--modal-visible-top, 0px)) 1rem calc(2rem + var(--modal-visible-bottom, 0px));
+    background: rgb(0 0 0 / 50%);
+}
+
+.team2-card-container,
+.team2-stage {
+    position: relative;
+}
+
+.team2-stage {
+    width: min(var(--team2-card-width), calc(100vw - 2rem), max(0px, calc((var(--modal-visible-height, 100vh) - 4rem) * .75)));
+    aspect-ratio: 3 / 4;
+}
+
+.team2-stage .card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 50%;
+    transform: scale(2);
+    transform-origin: top left;
+    transition: transform .45s ease;
+}
+
+.team2-stage .card-inner {
+    transition: transform 1s;
+}
+
+.team2-stage .back h3 {
+    font-size: .4rem;
+}
+
+.team2-stage .details {
+    font-size: .35rem;
+}
+
+.team2-close {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    right: 0;
+    transform: translate(50%, -50%);
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 1.25rem;
+    cursor: pointer;
+}
+
+.team2-close:focus-visible {
+    outline: 2px solid #d39a1e;
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .team2-stage .card,
+    .team2-stage .card-inner {
+        transition: none;
+    }
+}
