@@ -34,6 +34,10 @@ jobs:
               cp -R "$path" _site/
             fi
           done
+      - name: Install PDF thumbnail renderer
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - name: Generate newsletter thumbnails
+        run: node scripts/generate-newsletter-thumbnails.cjs _site
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:

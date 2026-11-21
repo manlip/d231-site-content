@@ -1,0 +1,114 @@
+.news h1 {
+    margin: 0 0 .75rem;
+    color: #772432;
+    font-size: 1.15rem;
+}
+
+.news-status {
+    color: #64748b;
+    font-size: .85rem;
+}
+
+.news-status button {
+    margin-left: .5rem;
+    font: inherit;
+}
+
+.carousel {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.carousel button {
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid #e2e8f0;
+    border-radius: .5rem;
+    background: #fff;
+    color: #772432;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.carousel button:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+.track {
+    display: grid;
+    flex: 1 1 auto;
+    min-width: 0;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 1rem) / 3);
+    gap: .5rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: .2rem 0;
+    scrollbar-width: none;
+}
+
+.track::-webkit-scrollbar { display: none; }
+
+.newsletter-card {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    scroll-snap-align: start;
+    border: 1px solid #f1f5f9;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .08);
+    color: inherit;
+    text-decoration: none;
+}
+
+.newsletter-card:hover { box-shadow: 0 6px 16px rgba(119, 36, 50, .15); }
+
+.newsletter-thumbnail {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: contain;
+    background: #f8eaed;
+}
+
+.newsletter-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: #772432;
+    font-size: .85rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.newsletter-body { padding: .9rem 1rem 1rem; }
+.newsletter-date { color: #64748b; font-size: .7rem; }
+.newsletter-title { margin: .35rem 0 0; font-size: .9rem; line-height: 1.4; overflow-wrap: anywhere; }
+.newsletter-action { margin: .65rem 0 0; color: #772432; font-size: .75rem; font-weight: 600; }
+
+.newsletter-card:focus-visible,
+.carousel button:focus-visible,
+.track:focus-visible,
+.news-status button:focus-visible {
+    outline: 2px solid #772432;
+    outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+    .track { grid-auto-columns: calc((100% - .5rem) / 2); }
+}
+
+@media (max-width: 480px) {
+    .track { grid-auto-columns: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .track { scroll-behavior: auto; }
+}

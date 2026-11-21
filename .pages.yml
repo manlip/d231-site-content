@@ -200,6 +200,48 @@ content:
             label: Category Icon
             type: string
 
+  - name: newsletters
+    label: Newsletters
+    type: file
+    path: data/newsletters.json
+    format: json
+    fields:
+      - name: newsletters
+        label: Newsletters (newest first)
+        type: object
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{fields.title} ({fields.date})"
+        fields:
+          - name: visibility
+            label: Visibility
+            type: select
+            default: public
+            options:
+              values:
+                - public
+                - hidden
+          - name: title
+            label: Newsletter Title
+            type: string
+            required: true
+          - name: date
+            label: Issue Date
+            type: string
+          - name: image
+            label: Cover Image
+            type: image
+            options:
+              media: images
+              path: assets/images/newsletters
+          - name: url
+            label: Newsletter PDF
+            type: file
+            options:
+              media: files
+              path: assets/files/newsletters
+
   - name: map_pins
     label: Club & Event Map Pins
     type: file

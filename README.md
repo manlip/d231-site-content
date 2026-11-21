@@ -10,7 +10,7 @@ This repository holds editable content, static pages, assets, and JavaScript wid
 - **Google Sites embedding:** A complete hosted page can be embedded in an iframe, or a smaller widget can be embedded with its own HTML container and script snippet.
 - **Browser runtime:** Pages and widgets load public JSON and assets from this site. No application server or database is required.
 
-Pages CMS currently defines team, awards, resources, and map-pin data. The preview shell has Team, Team 2, Awards, and Resources tabs; Events and Map remain placeholders until their pages are migrated.
+Pages CMS currently defines team, awards, resources, newsletters, and map-pin data. The preview shell has Team, Team 2, News, Awards, and Resources tabs; Events and Map remain placeholders until their pages are migrated.
 
 ## Folder Structure
 
@@ -26,6 +26,7 @@ Pages CMS currently defines team, awards, resources, and map-pin data. The previ
 ├── widgets/                   # Reusable widget HTML, CSS, and JavaScript (add as needed)
 ├── embed_snippet/
 │   ├── team.html              # Team page loaded inside the preview shell
+│   ├── news.html              # Newsletters page
 │   ├── awards.html            # Awards page loaded inside the preview shell
 │   ├── resources.html         # Resources page
 │   └── team_snippet.html      # Google Sites iframe snippet for the team page
@@ -37,22 +38,25 @@ Pages CMS currently defines team, awards, resources, and map-pin data. The previ
 ├── css/                       # Shared and page-specific stylesheets
 │   ├── awards.css             # Awards page styles
 │   ├── common.css             # Shared embed foundation and hero styles
+│   ├── news.css               # Newsletter carousel styles
 │   ├── resources.css          # Resources page styles
 │   └── team.css               # Team page styles
 ├── data/
 │   ├── awards.json            # Awards data
+│   ├── newsletters.json      # Newsletter list data
 │   ├── resources.json         # Resource list data
 │   ├── map-pins.json          # Configured for future map data (not yet created)
 │   └── team.json              # Team directory data
 └── js/                        # Shared and page-specific scripts
     ├── awards-loader.js       # Awards cards, details modal, and period status
     ├── markdown.js            # Shared Markdown renderer
+    ├── news-loader.js         # Newsletter carousel
     ├── resources-loader.js    # Resources search, categories and dialog
     ├── team-loader.js         # Team directory renderer
     └── utils.js               # Shared URL, fetch, cache, escaping and embed resize helpers
 ```
 
-The root `index.html` is a test host that imitates a Google Sites page: the top tabs select page content displayed in an iframe. Team, Awards, and Resources load their respective files in `embed_snippet/`; Events and Map remain placeholders until their pages are migrated. Add each page under `embed_snippet/` or `pages/`, then register its URL in the tab list. The deployment workflow publishes `embed_snippet/` as well as future `pages/` and `widgets/` folders. Use URLs that work under the project site base path (`/d231-site-content/`).
+The root `index.html` is a test host that imitates a Google Sites page: the top tabs select page content displayed in an iframe. Team, News, Awards, and Resources load their respective files in `embed_snippet/`; Events and Map remain placeholders until their pages are migrated. Add each page under `embed_snippet/` or `pages/`, then register its URL in the tab list. The deployment workflow publishes `embed_snippet/` as well as future `pages/` and `widgets/` folders. Use URLs that work under the project site base path (`/d231-site-content/`).
 
 ## Deploying Pages to GitHub Pages
 
@@ -62,6 +66,7 @@ The root `index.html` is a test host that imitates a Google Sites page: the top 
 
    - Preview shell: `https://manlip.github.io/d231-site-content/`
    - Team page: `https://manlip.github.io/d231-site-content/embed_snippet/team.html`
+   - News page: `https://manlip.github.io/d231-site-content/embed_snippet/news.html`
    - Awards page: `https://manlip.github.io/d231-site-content/embed_snippet/awards.html`
    - Resources page: `https://manlip.github.io/d231-site-content/embed_snippet/resources.html`
    - Example events page: `https://manlip.github.io/d231-site-content/pages/events/`
@@ -92,6 +97,10 @@ The separate [`team2.html`](embed_snippet/team2.html) page and [`team2_snippet.h
 1. Sign in to [Pages CMS](https://app.pagescms.org) and select this repository.
 2. Edit **District Team**, **Awards**, or **Resources** using their structured forms. Resource entries include visibility, category, subcategory, title, image, Markdown descriptions, related links, and optional resource type and category icon. Resources are grouped by category and subcategory for display. Award entries support visibility, category, subcategory, period, image, Markdown descriptions, related links, and a PDF attachment. Map pins are configured for future use.
 3. Save the changes to the repository. GitHub Actions deploys the updated files from `main`.
+
+Use **Newsletters** in Pages CMS to add issues in newest-first order. Provide a title, optional date, PDF and cover image; hidden issues are not shown. PDF and image files can be uploaded through the form, or their public HTTP(S) URLs can be entered in `data/newsletters.json` as `url` and `image`. Without a PDF, a card is not clickable.
+
+During GitHub Pages deployment, newsletters without a cover get a thumbnail generated from the first page of their repository PDF under `assets/files/`. An explicitly supplied image always takes precedence. Generated images and their references are written only to the deployed site, not back to the repository; local previews show a placeholder unless a cover is supplied. External PDF URLs are not downloaded, and missing, invalid, or unsupported PDFs leave a placeholder with a warning in the deployment logs.
 
 Team photos belong in `assets/images/team/`; award images belong in `assets/images/awards/`. Do not add credentials or private information: this repository and its public Pages site are publicly accessible.
 

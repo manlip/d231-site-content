@@ -1,0 +1,26 @@
+{
+  "newsletters": [
+    {
+      "visibility": "public",
+      "title": "November 2026 Newsletter",
+      "date": "November 2026",
+      "image": "",
+      "url": "assets/files/newsletters/2026_11_Newsletter.pdf"
+    },
+    {
+      "visibility": "public",
+      "title": "October 2026 Newsletter",
+      "date": "October 2026",
+      "image": "",
+      "url": "assets/files/newsletters/2026_10_Newsletter.pdf"
+    },
+    {
+      "visibility": "public",
+      "title": "September 2026 Newsletter",
+      "date": "September 2026",
+      "image": "",
+      "url": "assets/files/newsletters/2026_09_Newsletter.pdf"
+    }
+  ]
+}
+

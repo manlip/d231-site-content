@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="District 231 newsletters">
+    <title>District 231 News</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/news.css">
+</head>
+<body>
+    <main class="page news">
+        <p id="news-notice" class="notice" role="status" hidden></p>
+        <section aria-labelledby="newsletter-title">
+            <h1 id="newsletter-title">Newsletters</h1>
+            <p id="news-status" class="news-status" role="status">Loading newsletters...</p>
+            <div class="carousel" hidden>
+                <button type="button" id="news-previous" aria-controls="newsletters" aria-label="Previous newsletters">&#8249;</button>
+                <div id="newsletters" class="track" tabindex="0" aria-label="Newsletters"></div>
+                <button type="button" id="news-next" aria-controls="newsletters" aria-label="Next newsletters">&#8250;</button>
+            </div>
+        </section>
+    </main>
+    <script src="../js/utils.js"></script>
+    <script src="../js/news-loader.js"></script>
+</body>
+</html>
